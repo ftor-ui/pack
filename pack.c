@@ -6,7 +6,7 @@ void unpack(FILE* lpFileFrom, FILE* lpFileTo);
 int main(int const argc, char** const argv)
 {
 	if (argc < 4) {
-		printf("\nUsage: pack [-p/-u] file1 file2\n\t-p\tPack file1 to file2\n\t-u\tUnpack file1 to file2\n");
+		printf("\nUsage: pack [-p/-u] file1 file2\n\t-p\tPack file1 to file2\n\t-u\tUnpack file1 to file2\n\n");
 		return 0;
 	}
 	FILE* lpFileFrom = fopen(argv[2], "rb");
@@ -76,16 +76,15 @@ void unpack(FILE* lpFileFrom, FILE* lpFileTo)
 {
 	char unsigned cByte;
 	char unsigned cCount;
-	int iEof = fscanf(lpFileFrom, "%c", &cCount);
-	while(iEof == 1) {
-		iEof = fscanf(lpFileFrom, "%c", &cByte);
+	fscanf(lpFileFrom, "%c", &cCount);
+	while(fscanf(lpFileFrom, "%c", &cByte) == 1) {
 		if (cCount > 128)
 			for (int i = 0; i < cCount - 128; i++)
 				fprintf(lpFileTo, "%c", cByte);
 		else {
 			fprintf(lpFileTo, "%c", cByte);
 			for (int i = 1; i < cCount; i++) {
-				iEof = fscanf(lpFileFrom, "%c", &cByte);
+				fscanf(lpFileFrom, "%c", &cByte);
 				fprintf(lpFileTo, "%c", cByte);
 			}
 		}
