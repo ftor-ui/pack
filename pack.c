@@ -26,31 +26,31 @@ int main(int const argc, char** const argv)
 
 void pack(FILE* lpFileFrom, FILE* lpFileTo)
 {
-	char unsigned iBytePrev;
-	int iEof = fscanf(lpFileFrom, "%c", &iBytePrev);
-	char unsigned iByteCurr;
-	char unsigned iCounter = (char)1;
+	char unsigned cBytePrev;
+	int iEof = fscanf(lpFileFrom, "%c", &cBytePrev);
+	char unsigned cByteCurr;
+	char unsigned cCounter = (char)1;
 	while(iEof == 1) {
-		iEof = fscanf(lpFileFrom, "%c", &iByteCurr);
+		iEof = fscanf(lpFileFrom, "%c", &cByteCurr);
 		
-		if (iByteCurr != iBytePrev || (int)iCounter == 255 || iEof != 1) {
-			fprintf(lpFileTo, "%c%c", iCounter, iBytePrev);
-			iBytePrev = iByteCurr;
-			iCounter = 0;
+		if (cByteCurr != cBytePrev || (int)cCounter == 255 || iEof != 1) {
+			fprintf(lpFileTo, "%c%c", cCounter, cBytePrev);
+			cBytePrev = cByteCurr;
+			cCounter = 0;
 		}
 		
-		iCounter++;
+		cCounter++;
 	}
 }
 
 void unpack(FILE* lpFileFrom, FILE* lpFileTo)
 {
-	char unsigned iByte;
-	char unsigned iCount;
-	fscanf(lpFileFrom, "%c", &iCount);
-	while(fscanf(lpFileFrom, "%c", &iByte) == 1) {
-		for (int i = 0; i < (int)iCount; i++)
-			fprintf(lpFileTo, "%c", iByte);
-		fscanf(lpFileFrom, "%c", &iCount);
+	char unsigned cByte;
+	char unsigned cCount;
+	fscanf(lpFileFrom, "%c", &cCount);
+	while(fscanf(lpFileFrom, "%c", &cByte) == 1) {
+		for (int i = 0; i < (int)cCount; i++)
+			fprintf(lpFileTo, "%c", cByte);
+		fscanf(lpFileFrom, "%c", &cCount);
 	}
 }
