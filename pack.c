@@ -29,15 +29,15 @@ void pack(FILE* lpFileFrom, FILE* lpFileTo)
 	char unsigned cBytePrev;
 	int iEof = fscanf(lpFileFrom, "%c", &cBytePrev);
 	char unsigned cByteCurr;
-	char unsigned cCounterDup = 0x81; // 1000.0001 - highest bit, mean that the remaning 7 bit indicate count duplicates next byte
+	char unsigned cCounterDup = (char)0x81; // 1000.0001 - highest bit, mean that the remaning 7 bit indicate count duplicates next byte
 	char unsigned cCounterNotDup = 0;
 	char unsigned cBufferBytes[127];
 	while(iEof == 1) {
 		iEof = fscanf(lpFileFrom, "%c", &cByteCurr);
-		
-		if ((cByteCurr != cBytePrev && cCounterDup == 0x81) || (iEof != 1 && cCounterDup == 0x81))
+
+		if (cByteCurr != cBytePrev && cCounterDup == 0x81)
 			cCounterNotDup++;
-	
+			
 		else {
 			if (cCounterNotDup > 0) {
 				fprintf(lpFileTo, "%c", cCounterNotDup);
@@ -45,14 +45,13 @@ void pack(FILE* lpFileFrom, FILE* lpFileTo)
 					fprintf(lpFileTo, "%c", cBufferBytes[i]);
 				cCounterNotDup = 0;
 			}
-			if (cByteCurr == cBytePrev && iEof == 1)
-				cCounterDup++;
+			cCounterDup++;
 		}
 		if (cCounterNotDup == 1) {
 			cBufferBytes[0] = cBytePrev;
 			cBufferBytes[1] = cByteCurr;
 		}
-		else if (cCounterNotDup == 0x7F) {
+		else if (cCounterNotDup == 0x7E) {
 			cBufferBytes[cCounterNotDup] = cByteCurr;
 			fprintf(lpFileTo, "%c", cCounterNotDup + 1);
 			for (int i = 0; i < (int)cCounterNotDup + 1; i++)
@@ -63,20 +62,14 @@ void pack(FILE* lpFileFrom, FILE* lpFileTo)
 		}
 		else if (cCounterNotDup > 1)
 			cBufferBytes[cCounterNotDup] = cByteCurr;
-		
-		if (iEof != 1 && cCounterDup == 0x81) {
-			fprintf(lpFileTo, "%c", cCounterNotDup);
-			for (int i = 0; i < (int)cCounterNotDup; i++)
-				fprintf(lpFileTo, "%c", cBufferBytes[i]);
-			cCounterNotDup = 0;
-		}
-		
-		if ( (int)cCounterDup - 0x80 > 1 && (cByteCurr != cBytePrev || (int)cCounterDup == 255 || iEof != 1)) {
-			fprintf(lpFileTo, "%c%c", cCounterDup, cBytePrev);
+
+		if ( (int)cCounterDup - 0x80 > 1 && (cByteCurr != cBytePrev || (int)cCounterDup == 0xFF || iEof != 1)) {
+			fprintf(lpFileTo, "%c%c", cCounterDup - 1, cBytePrev);
 			cCounterDup = 0x81; // restore the variable
 		}
-		
+
 		cBytePrev = cByteCurr;
+  
 	}
 }
 
