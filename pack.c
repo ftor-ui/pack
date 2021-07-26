@@ -29,29 +29,30 @@ void pack(FILE* lpFileFrom, FILE* lpFileTo)
 	char unsigned cBytePrev;
 	int iEof = fscanf(lpFileFrom, "%c", &cBytePrev);
 	char unsigned cByteCurr;
-	char unsigned cCounterDup = (char)129; // 1000.0001 - highest bit, mean that the remaning 7 bit indicate count duplicates next byte
+	char unsigned cCounterDup = 0x81; // 1000.0001 - highest bit, mean that the remaning 7 bit indicate count duplicates next byte
 	char unsigned cCounterNotDup = 0;
 	char unsigned cBufferBytes[127];
 	while(iEof == 1) {
 		iEof = fscanf(lpFileFrom, "%c", &cByteCurr);
 		
-		if (cByteCurr != cBytePrev && cCounterDup == 129)
+		if ((cByteCurr != cBytePrev && cCounterDup == 0x81) || (iEof != 1 && cCounterDup == 0x81))
 			cCounterNotDup++;
-			
+	
 		else {
 			if (cCounterNotDup > 0) {
 				fprintf(lpFileTo, "%c", cCounterNotDup);
 				for (int i = 0; i < (int)cCounterNotDup; i++)
 					fprintf(lpFileTo, "%c", cBufferBytes[i]);
+				cCounterNotDup = 0;
 			}
-			cCounterNotDup = 0;
-			cCounterDup++;
+			if (cByteCurr == cBytePrev && iEof == 1)
+				cCounterDup++;
 		}
 		if (cCounterNotDup == 1) {
 			cBufferBytes[0] = cBytePrev;
 			cBufferBytes[1] = cByteCurr;
 		}
-		else if (cCounterNotDup == 126) {
+		else if (cCounterNotDup == 0x7F) {
 			cBufferBytes[cCounterNotDup] = cByteCurr;
 			fprintf(lpFileTo, "%c", cCounterNotDup + 1);
 			for (int i = 0; i < (int)cCounterNotDup + 1; i++)
@@ -63,9 +64,16 @@ void pack(FILE* lpFileFrom, FILE* lpFileTo)
 		else if (cCounterNotDup > 1)
 			cBufferBytes[cCounterNotDup] = cByteCurr;
 		
-		if ( (int)cCounterDup - 128 > 1 && (cByteCurr != cBytePrev || (int)cCounterDup == 255 || iEof != 1)) {
-			fprintf(lpFileTo, "%c%c", cCounterDup - 1, cBytePrev);
-			cCounterDup = 129; // restore the variable
+		if (iEof != 1 && cCounterDup == 0x81) {
+			fprintf(lpFileTo, "%c", cCounterNotDup);
+			for (int i = 0; i < (int)cCounterNotDup; i++)
+				fprintf(lpFileTo, "%c", cBufferBytes[i]);
+			cCounterNotDup = 0;
+		}
+		
+		if ( (int)cCounterDup - 0x80 > 1 && (cByteCurr != cBytePrev || (int)cCounterDup == 255 || iEof != 1)) {
+			fprintf(lpFileTo, "%c%c", cCounterDup, cBytePrev);
+			cCounterDup = 0x81; // restore the variable
 		}
 		
 		cBytePrev = cByteCurr;
@@ -78,8 +86,8 @@ void unpack(FILE* lpFileFrom, FILE* lpFileTo)
 	char unsigned cCount;
 	fscanf(lpFileFrom, "%c", &cCount);
 	while(fscanf(lpFileFrom, "%c", &cByte) == 1) {
-		if (cCount > 128)
-			for (int i = 0; i < cCount - 128; i++)
+		if (cCount > 0x80)
+			for (int i = 0; i < cCount - 0x80; i++)
 				fprintf(lpFileTo, "%c", cByte);
 		else {
 			fprintf(lpFileTo, "%c", cByte);
