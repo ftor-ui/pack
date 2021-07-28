@@ -2,17 +2,39 @@
 
 void pack(FILE* lpFileFrom, FILE* lpFileTo);
 void unpack(FILE* lpFileFrom, FILE* lpFileTo);
+void encrypt(FILE *lpFileFrom, FILE *lpFileTo, char const *lpKey, int iLength);
+void decrypt(FILE *lpFileFrom, FILE *lpFileTo, char const *lpKey, int iLength);
 
 int main(int const argc, char** const argv)
 {
-	if (argc < 4) {
-		printf("\nUsage: pack [-p/-u] file1 file2\n\t-p\tPack file1 to file2\n\t-u\tUnpack file1 to file2\n\n");
+	if (argc < 4 || argc < 5 && (argv[1][1] == 'e' || argv[1][1] == 'd')) {
+		printf("\nUsage: pacry [-p/-u/-e/-d] file1 file2 [-/key]\n\t");
+		printf("-p\tPack file1 to file2\n\t");
+		printf("-u\tUnpack file1 to file2\n\t");
+		printf("-e\tEncrypt with key file1 to file2\n\t");
+		printf("-d\tDecrypt with key file1 to file2\n\n");
 		return 0;
 	}
+	
 	FILE* lpFileFrom = fopen(argv[2], "rb");
 	FILE* lpFileTo   = fopen(argv[3], "w+b");
+	if (lpFileFrom == NULL) {
+		printf("File doesn`t exist: \"%s\"", argv[2]);
+		return 0;
+	}
 	
-	if (argv[1][1] == 'p')
+	if (argv[1][1] == 'e' || argv[1][1] == 'd') {
+		int iLength = 0;
+		char const *lpKey = argv[4];
+		for (int i = 0; lpKey[i] != '\0'; i++)
+			iLength++;
+		if (argv[1][1] == 'e')
+			encrypt(lpFileFrom, lpFileTo, lpKey, iLength);
+		else if (argv[1][1] == 'd')
+			decrypt(lpFileFrom, lpFileTo, lpKey, iLength);
+	}
+	
+	else if (argv[1][1] == 'p')
 		pack(lpFileFrom, lpFileTo);
 	else if (argv[1][1] == 'u')
 		unpack(lpFileFrom, lpFileTo);
@@ -21,6 +43,7 @@ int main(int const argc, char** const argv)
 	
 	fclose(lpFileTo);
 	fclose(lpFileFrom);
+	
 	return 0;
 }
 
@@ -108,5 +131,35 @@ void unpack(FILE* lpFileFrom, FILE* lpFileTo)
 			}
 		}
 		fscanf(lpFileFrom, "%c", &cCount);
+	}
+}
+
+void encrypt(FILE *lpFileFrom, FILE *lpFileTo, char const *lpKey, int iLength)
+{
+	char unsigned cByte = 0x0;
+	int iIndexChar = 0x0;
+	while (fscanf(lpFileFrom, "%c", &cByte) != EOF) {
+		
+		fprintf(lpFileTo, "%c", cByte + lpKey[iIndexChar]);
+		
+		iIndexChar++;
+		
+		if (iIndexChar == iLength)
+			iIndexChar = 0x0;
+	}
+}
+
+void decrypt(FILE *lpFileFrom, FILE *lpFileTo, char const *lpKey, int iLength)
+{
+	char unsigned cByte = 0x0;
+	int iIndexChar = 0x0;
+	while (fscanf(lpFileFrom, "%c", &cByte) != EOF) {
+		
+		fprintf(lpFileTo, "%c", cByte - lpKey[iIndexChar]);
+		
+		iIndexChar++;
+		
+		if (iIndexChar == iLength)
+			iIndexChar = 0x0;
 	}
 }
