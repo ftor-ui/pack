@@ -17,7 +17,7 @@ int main(int const argc, char** const argv)
 	else if (argv[1][1] == 'u')
 		unpack(lpFileFrom, lpFileTo);
 	else
-		printf("Unknown key: \"%s\"", argv[1]);
+		printf("Unknown option: \"%s\"", argv[1]);
 	
 	fclose(lpFileTo);
 	fclose(lpFileFrom);
