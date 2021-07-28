@@ -34,7 +34,7 @@ void pack(FILE* lpFileFrom, FILE* lpFileTo)
 	char unsigned cBufferBytes[0x7F];
 	int iEof = fscanf(lpFileFrom, "%c", &cBytePrev);
 	
-	while (iEof != EOF) {
+	do {
 		
 		iEof = fscanf(lpFileFrom, "%c", &cByteCurr);
 		
@@ -48,11 +48,11 @@ void pack(FILE* lpFileFrom, FILE* lpFileTo)
 			cCountDup++;
 		}
 		
-		else if (iEof == EOF && cCountNotDup > 0x1) {
+		else if (iEof == EOF && cCountDup == 0x1) {
 			fprintf(lpFileTo, "%c", cCountNotDup);
 			for (int i = 0x0; i < cCountNotDup; i++)
 				fprintf(lpFileTo, "%c", cBufferBytes[i]);
-			cCountNotDup = 0x1;
+			break;
 		}
 		
 		else if (cCountDup == 0x1)
@@ -86,12 +86,9 @@ void pack(FILE* lpFileFrom, FILE* lpFileTo)
 			cCountDup = 0x1;
 		}
 
-		
-		if (iEof == EOF)
-			break;
 		cBytePrev = cByteCurr;
 		
-	}
+	} while (iEof != EOF);
 }
 
 void unpack(FILE* lpFileFrom, FILE* lpFileTo)
@@ -99,9 +96,9 @@ void unpack(FILE* lpFileFrom, FILE* lpFileTo)
 	char unsigned cByte;
 	char unsigned cCount;
 	fscanf(lpFileFrom, "%c", &cCount);
-	while(fscanf(lpFileFrom, "%c", &cByte) == 1) {
+	while(fscanf(lpFileFrom, "%c", &cByte) != EOF) {
 		if (cCount > 0x80)
-			for (int i = 0; i < cCount - 0x80; i++)
+			for (int i = 0x0; i < cCount - 0x80; i++)
 				fprintf(lpFileTo, "%c", cByte);
 		else {
 			fprintf(lpFileTo, "%c", cByte);
