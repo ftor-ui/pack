@@ -193,18 +193,10 @@ void packd(char const *lpPath, FILE *lpFileTo, int iMode, int iLevel)
 	struct dirent *lpObject;
 	FILE *lpFileFrom = NULL;
 	
-	// Count the amount objects in dir; need in directory handler
-	while ((lpObject = readdir(lpDir)) != NULL) {
-		iCountObject++;
-	}
-	rewinddir(lpDir);
-	
 	// File handler
 	while ((lpObject = readdir(lpDir)) != NULL) {
 		if (type(gluingpath(lpPath, lpObject->d_name, lpBuffer)) == 1)
 			continue;
-		
-		iCountFile++;
 		
 		lpFileFrom = fopen(gluingpath(lpPath, lpObject->d_name, lpBuffer), "rb");
 		fprintf(lpFileTo, "%c", 0x80); // means start file bytes
@@ -219,6 +211,7 @@ void packd(char const *lpPath, FILE *lpFileTo, int iMode, int iLevel)
 		fseek(lpFileFrom, 0, SEEK_SET);
 		printf("%s\n", gluingpath(lpPath, lpObject->d_name, lpBuffer));
 		pack(lpFileFrom, lpFileTo);
+		fclose(lpFileFrom);
 		fprintf(lpFileTo, "%c%c%c%c", 0x80, 0x2, 0x2, 0x2); // means end bytes of file
 	}
 	rewinddir(lpDir);
@@ -230,12 +223,8 @@ void packd(char const *lpPath, FILE *lpFileTo, int iMode, int iLevel)
 		lpObject->d_name[1] == '.' && lpObject->d_name[2] == '\0') || \
 		(lpObject->d_name[0] == '.' && lpObject->d_name[1] == '\0'))
 			continue;
-			
-		iCountDir++;
-		if (iCountObject - iCountFile - 2 == iCountDir)
-			packd(gluingpath(lpPath, lpObject->d_name, lpBuffer), lpFileTo, 1, iLevel + 1);
-		else
-			packd(gluingpath(lpPath, lpObject->d_name, lpBuffer), lpFileTo, 0, iLevel + 1);
+
+		packd(gluingpath(lpPath, lpObject->d_name, lpBuffer), lpFileTo, 0, iLevel + 1);
 		
 	}
 	closedir(lpDir);
@@ -263,7 +252,7 @@ void unpackd(FILE *lpFileFrom, char const *lpPath)
 	copypath(lpPath, lpCurrentPath);
 
 	while(fscanf(lpFileFrom, "%c", &cByte) != EOF) {
-		if (cByte == 0x0 || cByte == 0x1) {
+		if (cByte == 0x0) {
 			
 			cByteDir = cByte;
 			
@@ -294,6 +283,7 @@ void unpackd(FILE *lpFileFrom, char const *lpPath)
 			gluingpath(lpCurrentPath, lpDirName, lpBuffer);
 			copypath(lpBuffer, lpCurrentPath);
 			
+
 			iLevelPrev = iLevel;
 			iLevel = 0;
 			
