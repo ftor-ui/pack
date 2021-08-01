@@ -195,7 +195,9 @@ void packd(char const *lpPath, FILE *lpFileTo, int iMode, int iLevel)
 	
 	// File handler
 	while ((lpObject = readdir(lpDir)) != NULL) {
-		if (type(gluingpath(lpPath, lpObject->d_name, lpBuffer)) == 1)
+		if (type(gluingpath(lpPath, lpObject->d_name, lpBuffer)) == 1 || (lpObject->d_name[0] == '.' &&\
+		lpObject->d_name[1] == '.' && lpObject->d_name[2] == '\0') || \
+		(lpObject->d_name[0] == '.' && lpObject->d_name[1] == '\0'))
 			continue;
 		
 		lpFileFrom = fopen(gluingpath(lpPath, lpObject->d_name, lpBuffer), "rb");
