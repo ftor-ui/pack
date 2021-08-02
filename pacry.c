@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <dirent.h>
 
 
@@ -30,10 +29,10 @@ int main(int const argc, char** const argv)
 		printf("-d \tDecrypt with key file1 to file2\n\n");
 		return 0;
 	}
-	
+
 	FILE *lpFileTo = NULL;
 	FILE *lpFileFrom = NULL;
-	
+
 	if (!(argv[1][1] == 'u' && argv[1][2] == 'd'))
 		lpFileTo   = fopen(argv[3], "w+b");
 	if (!(argv[1][1] == 'p' && argv[1][2] == 'd'))
@@ -42,7 +41,7 @@ int main(int const argc, char** const argv)
 		printf("File doesn`t exist: \"%s\"\n", argv[2]);
 		return 0;
 	}
-	
+
 	if (argv[1][1] == 'p' && argv[1][2] == 'd')
 		packd(argv[2], lpFileTo, 0, 0);
 	else if (argv[1][1] == 'u' && argv[1][2] == 'd')
@@ -58,17 +57,19 @@ int main(int const argc, char** const argv)
 		else if (argv[1][1] == 'd')
 			decrypt(lpFileFrom, lpFileTo, lpKey, iLength);
 	}
-	
+
 	else if (argv[1][1] == 'p')
 		pack(lpFileFrom, lpFileTo);
 	else if (argv[1][1] == 'u')
 		unpack(lpFileFrom, lpFileTo);
 	else
 		printf("Unknown option: \"%s\"\n", argv[1]);
-	
-	fclose(lpFileTo);
-	fclose(lpFileFrom);
-	
+
+	if (!(argv[1][1] == 'u' && argv[1][2] == 'd'))
+		fclose(lpFileTo);
+	if (!(argv[1][1] == 'p' && argv[1][2] == 'd'))
+		fclose(lpFileFrom);
+
 	return 0;
 }
 
@@ -81,11 +82,11 @@ void pack(FILE *lpFileFrom, FILE *lpFileTo)
 	char unsigned cCountNotDup = 0x1;
 	char unsigned cBufferBytes[0x7F];
 	int iEof = fscanf(lpFileFrom, "%c", &cBytePrev);
-	
+
 	do {
-		
+
 		iEof = fscanf(lpFileFrom, "%c", &cByteCurr);
-		
+
 		if (cByteCurr == cBytePrev && iEof != EOF) {
 			if (cCountNotDup > 0x1) {
 				fprintf(lpFileTo, "%c", cCountNotDup - 0x1);
@@ -95,22 +96,22 @@ void pack(FILE *lpFileFrom, FILE *lpFileTo)
 			}
 			cCountDup++;
 		}
-		
+
 		else if (iEof == EOF && cCountDup == 0x1) {
 			fprintf(lpFileTo, "%c", cCountNotDup);
 			for (int i = 0x0; i < cCountNotDup; i++)
 				fprintf(lpFileTo, "%c", cBufferBytes[i]);
 			break;
 		}
-		
+
 		else if (cCountDup == 0x1)
 			cCountNotDup++;
-		
+
 		if (cCountNotDup == 0x2) {
 			cBufferBytes[0x0] = cBytePrev;
 			cBufferBytes[0x1] = cByteCurr;
 		}
-		
+
 		else if (cCountNotDup == 0x7F) {
 			cBufferBytes[cCountNotDup - 0x1] = cByteCurr;
 			fprintf(lpFileTo, "%c", cCountNotDup);
@@ -120,10 +121,10 @@ void pack(FILE *lpFileFrom, FILE *lpFileTo)
 			fscanf(lpFileFrom, "%c", &cBytePrev);
 			continue;
 		}
-		
+
 		else if (cCountNotDup > 0x2)
 			cBufferBytes[cCountNotDup - 0x1] = cByteCurr;
-		
+
 		if (cCountDup > 0x1 && (cByteCurr != cBytePrev || cCountDup == 0x7F || iEof == EOF)) {
 			fprintf(lpFileTo, "%c%c", cCountDup + 0x80, cBytePrev);
 			if (cCountDup == 0x7F) {
@@ -135,7 +136,7 @@ void pack(FILE *lpFileFrom, FILE *lpFileTo)
 		}
 
 		cBytePrev = cByteCurr;
-		
+
 	} while (iEof != EOF);
 }
 
@@ -166,15 +167,15 @@ void packd(char const *lpPath, FILE *lpFileTo, int iMode, int iLevel)
 	int iCountDir = 0;
 	char lpBuffer[260] = {0x0};
 	getnamedir(lpPath, lpBuffer);
-	
+
 	fprintf(lpFileTo, "%c", (char unsigned)iMode); // 0000.0000 means start directory bytes
-	
+
 	// Filling the name directory
 	for (int i = 0x0; lpBuffer[i] != '\0'; i++) {
 		fprintf(lpFileTo, "%c", (char unsigned)lpBuffer[i]);
 	}
 	fprintf(lpFileTo, "%c", 0x0); // 0000.0000 means end name of directory
-	
+
 	char unsigned cByteLevel = 0x0;
 	for (int i = 0x0; i < iLevel; i++) {
 		cByteLevel++;
@@ -188,27 +189,27 @@ void packd(char const *lpPath, FILE *lpFileTo, int iMode, int iLevel)
 	if (iLevel == 0x0)
 		fprintf(lpFileTo, "%c", 0x0);
 	fprintf(lpFileTo, "%c", 0x0);
-	
+
 	DIR *lpDir = opendir(lpPath);
 	struct dirent *lpObject;
 	FILE *lpFileFrom = NULL;
-	
+
 	// File handler
 	while ((lpObject = readdir(lpDir)) != NULL) {
-		if (type(gluingpath(lpPath, lpObject->d_name, lpBuffer)) == 1 || (lpObject->d_name[0] == '.' &&\
+		if (type(gluingpath(lpPath, lpObject->d_name, lpBuffer)) == 0 || (lpObject->d_name[0] == '.' &&\
 		lpObject->d_name[1] == '.' && lpObject->d_name[2] == '\0') || \
 		(lpObject->d_name[0] == '.' && lpObject->d_name[1] == '\0'))
 			continue;
-		
+
 		lpFileFrom = fopen(gluingpath(lpPath, lpObject->d_name, lpBuffer), "rb");
 		fprintf(lpFileTo, "%c", 0x80); // means start file bytes
-		
+
 		// Filling the name file
 		for (int i = 0x0; lpObject->d_name[i] != '\0'; i++) {
 			fprintf(lpFileTo, "%c", (char unsigned)lpObject->d_name[i]);
 		}
 		fprintf(lpFileTo, "%c", 0x0); // 0000.0000 means end name of directory
-		
+
 		// Pack the file
 		fseek(lpFileFrom, 0, SEEK_SET);
 		printf("%s\n", gluingpath(lpPath, lpObject->d_name, lpBuffer));
@@ -217,17 +218,17 @@ void packd(char const *lpPath, FILE *lpFileTo, int iMode, int iLevel)
 		fprintf(lpFileTo, "%c%c%c%c", 0x80, 0x2, 0x2, 0x2); // means end bytes of file
 	}
 	rewinddir(lpDir);
-	
+
 	// Directory handler
 	while ((lpObject = readdir(lpDir)) != NULL) {
-		
-		if (type(gluingpath(lpPath, lpObject->d_name, lpBuffer)) == 0 || (lpObject->d_name[0] == '.' &&\
+
+		if (type(gluingpath(lpPath, lpObject->d_name, lpBuffer)) == 1 || (lpObject->d_name[0] == '.' &&\
 		lpObject->d_name[1] == '.' && lpObject->d_name[2] == '\0') || \
 		(lpObject->d_name[0] == '.' && lpObject->d_name[1] == '\0'))
 			continue;
 
 		packd(gluingpath(lpPath, lpObject->d_name, lpBuffer), lpFileTo, 0, iLevel + 1);
-		
+
 	}
 	closedir(lpDir);
 }
@@ -244,20 +245,20 @@ void unpackd(FILE *lpFileFrom, char const *lpPath)
 	char unsigned cCount;
 	int iLevel = 0;
 	int iLevelPrev = 0;
-	
+
 	DIR *lpDir = NULL;
 	if ((lpDir = opendir(lpPath)) == NULL)
-		mkdir(lpPath);
+		mkdir(lpPath, 0700);
 	else
 		closedir(lpDir);
-	
+
 	copypath(lpPath, lpCurrentPath);
 
 	while(fscanf(lpFileFrom, "%c", &cByte) != EOF) {
 		if (cByte == 0x0) {
-			
+
 			cByteDir = cByte;
-			
+
 			fscanf(lpFileFrom, "%c", &cByte);
 			lpDirName[0] = cByte;
 			for (int i = 1; cByte != 0x0; i++) {
@@ -271,7 +272,7 @@ void unpackd(FILE *lpFileFrom, char const *lpPath)
 					break;
 				iLevel += (int)cByte;
 			}
-			
+
 			if (iLevel < iLevelPrev)
 				for (int i = 0; i < iLevelPrev - iLevel + 1; i++) {
 					cdtop(lpCurrentPath, lpBuffer);
@@ -281,27 +282,27 @@ void unpackd(FILE *lpFileFrom, char const *lpPath)
 				cdtop(lpCurrentPath, lpBuffer);
 				copypath(lpBuffer, lpCurrentPath);
 			}
-			
+
 			gluingpath(lpCurrentPath, lpDirName, lpBuffer);
 			copypath(lpBuffer, lpCurrentPath);
-			
+
 
 			iLevelPrev = iLevel;
 			iLevel = 0;
-			
-			mkdir(lpCurrentPath);
+
+			mkdir(lpCurrentPath, 0700);
 		}
 		else if (cByte == 0x80) {
-			
+
 			fscanf(lpFileFrom, "%c", &cByte);
 			lpFileName[0] = cByte;
 			for (int i = 1; cByte != 0x0; i++) {
 				fscanf(lpFileFrom, "%c", &cByte);
 				lpFileName[i] = cByte;
 			}
-			
+
 			printf("%s\n", gluingpath(lpCurrentPath, lpFileName, lpBuffer));
-			
+
 			FILE *lpFileTo = fopen(gluingpath(lpCurrentPath, lpFileName, lpBuffer), "w+b");
 			fscanf(lpFileFrom, "%c", lpFourBytes + 0);
 			fscanf(lpFileFrom, "%c", lpFourBytes + 1);
@@ -319,33 +320,33 @@ void unpackd(FILE *lpFileFrom, char const *lpPath)
 				fseek(lpFileFrom, -2, SEEK_CUR);
 			}
 			while (!(lpFourBytes[0] == 0x80 && lpFourBytes[1] == 0x2 && lpFourBytes[2] == 0x2 && lpFourBytes[3] == 0x2)) {
-				
+
 				fseek(lpFileFrom, -4, SEEK_CUR);
 				fscanf(lpFileFrom, "%c", &cCount);
 				fscanf(lpFileFrom, "%c", &cByte);
-				
+
 				if (cCount > 0x80)
 					for (int i = 0x0; i < cCount - 0x80; i++)
 						fprintf(lpFileTo, "%c", cByte);
 				else {
 					fprintf(lpFileTo, "%c", cByte);
-					
+
 					for (int i = 0x1; i < cCount; i++) {
 						fscanf(lpFileFrom, "%c", &cByte);
 						fprintf(lpFileTo, "%c", cByte);
 					}
 				}
-				
+
 				fscanf(lpFileFrom, "%c", lpFourBytes + 0);
 				fscanf(lpFileFrom, "%c", lpFourBytes + 1);
 				fscanf(lpFileFrom, "%c", lpFourBytes + 2);
 				fscanf(lpFileFrom, "%c", lpFourBytes + 3);
-				
+
 			}
 			fclose(lpFileTo);
-		}	
+		}
 	}
-	
+
 }
 
 void encrypt(FILE *lpFileFrom, FILE *lpFileTo, char const *lpKey, int iLength)
@@ -353,11 +354,11 @@ void encrypt(FILE *lpFileFrom, FILE *lpFileTo, char const *lpKey, int iLength)
 	char unsigned cByte = 0x0;
 	int iIndexChar = 0x0;
 	while (fscanf(lpFileFrom, "%c", &cByte) != EOF) {
-		
+
 		fprintf(lpFileTo, "%c", cByte + lpKey[iIndexChar]);
-		
+
 		iIndexChar++;
-		
+
 		if (iIndexChar == iLength)
 			iIndexChar = 0x0;
 	}
@@ -368,11 +369,11 @@ void decrypt(FILE *lpFileFrom, FILE *lpFileTo, char const *lpKey, int iLength)
 	char unsigned cByte = 0x0;
 	int iIndexChar = 0x0;
 	while (fscanf(lpFileFrom, "%c", &cByte) != EOF) {
-		
+
 		fprintf(lpFileTo, "%c", cByte - lpKey[iIndexChar]);
-		
+
 		iIndexChar++;
-		
+
 		if (iIndexChar == iLength)
 			iIndexChar = 0x0;
 	}
@@ -380,11 +381,11 @@ void decrypt(FILE *lpFileFrom, FILE *lpFileTo, char const *lpKey, int iLength)
 
 int type(char const *lpNameObj)
 {
-	FILE *lpFileTemp = fopen(lpNameObj, "r");
-	if (lpFileTemp == NULL)
+	DIR *lpDirTemp = opendir(lpNameObj);
+	if (lpDirTemp == NULL)
 		return 1;
 
-	fclose(lpFileTemp);
+	closedir(lpDirTemp);
 	return 0;
 }
 
@@ -393,38 +394,38 @@ char *getnamedir(char const *lpCurrentPath, char *lpBuffer)
 	int iCount = 0; // count chars in 'lpCurrentPath' without '\0'
 	for (int i = 0; lpCurrentPath[i] != '\0'; i++)
 		iCount++;
-	
+
 	int iCountDir = 0; // count chars in name of finaly directory of path 'lpCurrentPath'
 	for (int i = iCount - 1; i >= 0; i--) {
 		if ((lpCurrentPath[i] == '\\' || lpCurrentPath[i] == '/') && i != iCount - 1)
 			break;
 		iCountDir++;
 	}
-	
+
 	// Filling 'lpBuffer'
 	for (int i = 0; i < iCountDir && i < 260; i++) { // 260 - max chars in 'lpBuffer'
 		if (lpCurrentPath[iCount - iCountDir + i] == '\\' || lpCurrentPath[iCount - iCountDir + i] == '/')
 			continue;
 		lpBuffer[i] = lpCurrentPath[iCount - iCountDir + i];
 	}
-	
+
 	return lpBuffer;
 }
 
 char *gluingpath(char const *lpFirstPath, char *lpSecondPath, char *lpBuffer)
 {
-	
+
 	int iCountFirstPath = 0; // count chars in 'lpFirstPath' without '\0'
 	for (int i = 0; lpFirstPath[i] != '\0' && i < 260; i++) {
 		lpBuffer[i] = lpFirstPath[i];
 		iCountFirstPath++;
 	}
-	
+
 	if (lpFirstPath[iCountFirstPath - 1] != '\\' && lpFirstPath[iCountFirstPath - 1] != '/')
 		lpBuffer[iCountFirstPath] = '/';
 	else
 		iCountFirstPath--;
-	
+
 	int iCountSecondPath = 0; // // count chars in 'lpSecondPath' without '\0'
 	for (int i = 0; lpSecondPath[i] != '\0'; i++) {
 		if (lpBuffer[iCountFirstPath] == '/')
@@ -434,7 +435,7 @@ char *gluingpath(char const *lpFirstPath, char *lpSecondPath, char *lpBuffer)
 		iCountSecondPath++;
 	}
 	lpBuffer[iCountFirstPath + iCountSecondPath + 1] = 0;
-		
+
 	return lpBuffer;
 }
 
@@ -446,7 +447,7 @@ char *cdtop(char const *lpPath, char *lpBuffer)
 		iCount++;
 	}
 	lpBuffer[iCount] = 0;
-	
+
 	for (int i = iCount - 1; i >= 0; i--) {
 		if (i == 0)
 			lpBuffer[i] = '/';
@@ -454,7 +455,7 @@ char *cdtop(char const *lpPath, char *lpBuffer)
 			break;
 		lpBuffer[i] = 0;
 	}
-	
+
 	return lpBuffer;
 }
 
@@ -466,6 +467,6 @@ char *copypath(char const *lpPathFrom, char *lpPathTo)
 		iCount++;
 	}
 	lpPathTo[iCount] = 0;
-	
+
 	return lpPathTo;
 }
