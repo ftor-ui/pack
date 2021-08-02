@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <dirent.h>
 
 
@@ -248,7 +249,11 @@ void unpackd(FILE *lpFileFrom, char const *lpPath)
 
 	DIR *lpDir = NULL;
 	if ((lpDir = opendir(lpPath)) == NULL)
+	#ifdef __linux__
 		mkdir(lpPath, 0700);
+	#elif _WIN32
+		mkdir(lpPath);
+	#endif
 	else
 		closedir(lpDir);
 
@@ -290,7 +295,11 @@ void unpackd(FILE *lpFileFrom, char const *lpPath)
 			iLevelPrev = iLevel;
 			iLevel = 0;
 
-			mkdir(lpCurrentPath, 0700);
+			#ifdef __linux__
+				mkdir(lpCurrentPath, 0700);
+			#elif _WIN32
+				mkdir(lpCurrentPath);
+			#endif
 		}
 		else if (cByte == 0x80) {
 
