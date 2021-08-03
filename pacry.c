@@ -13,7 +13,7 @@ void decrypt(FILE *lpFileFrom, FILE *lpFileTo, char const *lpKey, int iLength);
 
 // Secondery functions
 int type(char const *lpNameObj); // 0 - dir, 1 - file; need in functions packd
-char *getnamedir(char const *lpCurrentPath, char *lpBuffer); // write to 'cBuffer' final directory of path 'lpCurrentPath'
+char *getnamedir(char const *lpCurrentPath, char *lpBuffer); // write to 'lpBuffer' final directory of path 'lpCurrentPath'
 char *gluingpath(char const *lpFirstPath, char *lpSecondPath, char *lpBuffer); // gluing two path in one and return him; full path need for open files
 char *cdtop(char const *lpPath, char *lpBuffer); // changes the path one directory above
 char *copypath(char const *lpPathFrom, char *lpPathTo); // copy 'lpPathFrom' to 'lpPathTo'
